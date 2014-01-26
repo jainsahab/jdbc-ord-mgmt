@@ -27,8 +27,9 @@ public class SampleJDBCTest {
         System.out.println("Setup is running");
         try{
             Class.forName("org.mariadb.jdbc.Driver");
+//            DriverManager.registerDriver(new org.mariadb.jdbc.Driver());
             conn = DriverManager.getConnection(DB_URL, USER, PASS);
-                stmt = conn.createStatement();
+            stmt = conn.createStatement();
             String om_customer = "create table om_customer(" +
                     "cust_id int primary key auto_increment," +
                     "cust_name char(40)," +
@@ -66,10 +67,8 @@ public class SampleJDBCTest {
             stmt.execute(om_order_item);
             stmt.execute(om_payment);
             stmt.execute(om_products);
-//            stmt.execute(addForeignKeyToOrdersTable);
+            stmt.execute(addForeignKeyToOrdersTable);
 
-            stmt.close();
-            conn.close();
         }catch(SQLException se){
             se.printStackTrace();
         }catch(Exception e){
@@ -81,16 +80,13 @@ public class SampleJDBCTest {
     public void tearDown() throws Exception {
         System.out.println("tear down is running");
         try{
-            Class.forName("org.mariadb.jdbc.Driver");
-            conn = DriverManager.getConnection(DB_URL, USER, PASS);
-            stmt = conn.createStatement();
             String sql1 = "drop table om_customer";
             String sql2 = "drop table om_orders";
             String sql3 = "drop table om_order_item";
             String sql4 = "drop table om_payment";
             String sql5 = "drop table om_products";
-            boolean rs = stmt.execute(sql1);
             stmt.execute(sql2);
+            stmt.execute(sql1);
             stmt.execute(sql3);
             stmt.execute(sql4);
             stmt.execute(sql5);
@@ -103,6 +99,45 @@ public class SampleJDBCTest {
         }
     }
 
+    @Test
+    public void test_to_insert_and_delete_data_from_database() throws Exception {
+        String insertQuery = "insert into om_customer(cust_name,address,phone_no)" +
+                " values('Prateek','F-2/21,Delhi','349809890')";
+        String deleteQuery = "delete from om_customer where cust_name='Prateek';";
+        int affectedRows = stmt.executeUpdate(insertQuery);
+        assertEquals(1,affectedRows);
+        affectedRows= -1;
+        affectedRows = stmt.executeUpdate(deleteQuery);
+        assertEquals(1,affectedRows);
+    }
 
+    @Test
+    public void test_to_insert_and_retrieve_data_from_database() throws Exception {
+        String insertQuery = "insert into om_payment(payment_status,order_id,date_of_payment)" +
+                " values('Y',1,'2014-01-26')";
+        String retrieveQuery = "select * from om_payment";
+        int affectedRows = stmt.executeUpdate(insertQuery);
+        assertEquals(1,affectedRows);
+        ResultSet rs;
+        rs = stmt.executeQuery(retrieveQuery);
+        assertEquals(1,affectedRows);
+        while (rs.next()) {
+            assertEquals("Y", rs.getString("payment_status"));
+            assertEquals(1,rs.getInt("order_id"));
+            assertEquals("2014-01-26",rs.getString("date_of_payment"));
+        }
+    }
+
+    @Test(expected = SQLIntegrityConstraintViolationException.class)
+    public void test_to_make_foreign_key_and_then_try_to_delete_parent_table() throws Exception {
+        String insertQuery = "insert into om_customer(cust_name,address,phone_no)" +
+                " values('Prateek','F-2/21,Delhi','349809890')";
+        String insertIntoOrder = "insert into om_orders(cust_id,total_bill,date_of_order)"+
+                " values (1,345,'2014-01-26')";
+        String deleteQuery = "delete from om_customer where cust_name='Prateek';";
+        stmt.executeUpdate(insertQuery);
+        stmt.executeUpdate(insertIntoOrder);
+        stmt.executeUpdate(deleteQuery);
+    }
 
 }
