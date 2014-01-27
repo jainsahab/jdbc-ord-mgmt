@@ -140,4 +140,20 @@ public class SampleJDBCTest {
         stmt.executeUpdate(deleteQuery);
     }
 
+    @Test
+    public void test_to_insert_and_update_data_in_database() throws Exception {
+        String insertQuery = "insert into om_customer(cust_name,address,phone_no)" +
+                " values('Prateek','F-2/21,Delhi','349809890')";
+        String updateQuery = "update om_customer set cust_name='Prayas' where cust_id=1;";
+        String retrieveQuery = "select * from om_customer";
+        int affectedRows = stmt.executeUpdate(insertQuery);
+        assertEquals(1,affectedRows);
+        affectedRows = stmt.executeUpdate(updateQuery);
+        assertEquals(1,affectedRows);
+        ResultSet rs;
+        rs = stmt.executeQuery(retrieveQuery);
+        while (rs.next()) {
+            assertEquals("Prayas", rs.getString("cust_name"));
+        }
+    }
 }
